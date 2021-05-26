@@ -126,6 +126,51 @@ static int ssp_context_restore(struct dai *dai)
 	return 0;
 }
 
+static int ssp_hw_params(struct dai *dai)
+{
+	struct ssp_pdata *ssp = dai_get_drvdata(dai);
+
+	if (!(ssp->params.clks_control &
+		SOF_DAI_INTEL_SSP_CLKCTRL_BCLK_ES))
+		return 0;
+
+	spin_lock(&dai->lock);
+
+	/* enable port */
+	ssp_update_bits(dai, SSCR0, SSCR0_SSE, SSCR0_SSE);
+	trace_ssp("ssp_hw_params(), SSP%d port enabled", dai->index);
+
+	spin_unlock(&dai->lock);
+
+	return 0;
+}
+
+static int ssp_hw_free(struct dai *dai)
+{
+	struct ssp_pdata *ssp = dai_get_drvdata(dai);
+
+	if (!(ssp->params.clks_control &
+		SOF_DAI_INTEL_SSP_CLKCTRL_BCLK_ES))
+		return 0;
+
+	spin_lock(&dai->lock);
+
+	trace_ssp("ssp_hw_free()");
+
+	/* disable SSP port if no users */
+	if (ssp->state[SOF_IPC_STREAM_CAPTURE] != COMP_STATE_ACTIVE &&
+	    ssp->state[SOF_IPC_STREAM_PLAYBACK] != COMP_STATE_ACTIVE) {
+		ssp_update_bits(dai, SSCR0, SSCR0_SSE, 0);
+		ssp->state[SOF_IPC_STREAM_CAPTURE] = COMP_STATE_PREPARE;
+		ssp->state[SOF_IPC_STREAM_PLAYBACK] = COMP_STATE_PREPARE;
+		trace_ssp("ssp_hw_free(), SSP%d port disabled", dai->index);
+	}
+
+	spin_unlock(&dai->lock);
+
+	return 0;
+}
+
 /* Digital Audio interface formatting */
 static inline int ssp_set_config(struct dai *dai,
 				 struct sof_ipc_dai_config *config)
@@ -167,6 +212,12 @@ static inline int ssp_set_config(struct dai *dai,
 	int i;
 	int clk_index = -1;
 	int ret = 0;
+
+	/* extra set config sent from host just for clock control */
+	if (config->flags & SOF_DAI_CONFIG_FLAGS_HW_PARAMS)
+		return ssp_hw_params(dai);
+	else if (config->flags & SOF_DAI_CONFIG_FLAGS_HW_FREE)
+		return ssp_hw_free(dai);
 
 	spin_lock(&dai->lock);
 
@@ -745,8 +796,13 @@ static void ssp_start(struct dai *dai, int direction)
 
 	spin_lock(&dai->lock);
 
-	/* enable port */
-	ssp_update_bits(dai, SSCR0, SSCR0_SSE, SSCR0_SSE);
+	if (!(ssp->params.clks_control &
+		SOF_DAI_INTEL_SSP_CLKCTRL_BCLK_ES)) {
+		/* enable port */
+		ssp_update_bits(dai, SSCR0, SSCR0_SSE, SSCR0_SSE);
+		trace_ssp("ssp_start(), SSP%d port enabled", dai->index);
+	}
+
 	ssp->state[direction] = COMP_STATE_ACTIVE;
 
 	trace_ssp("ssp_start()");
@@ -793,13 +849,19 @@ static void ssp_stop(struct dai *dai, int direction)
 		trace_ssp("ssp_stop(), TX stop");
 	}
 
+	if (ssp->params.clks_control & SOF_DAI_INTEL_SSP_CLKCTRL_BCLK_ES) {
+		/* port will be disabled in hw_free */
+		spin_unlock(&dai->lock);
+		return;
+	}
+
 	/* disable SSP port if no users */
 	if (ssp->state[SOF_IPC_STREAM_CAPTURE] != COMP_STATE_ACTIVE &&
 	    ssp->state[SOF_IPC_STREAM_PLAYBACK] != COMP_STATE_ACTIVE) {
 		ssp_update_bits(dai, SSCR0, SSCR0_SSE, 0);
 		ssp->state[SOF_IPC_STREAM_CAPTURE] = COMP_STATE_PREPARE;
 		ssp->state[SOF_IPC_STREAM_PLAYBACK] = COMP_STATE_PREPARE;
-		trace_ssp("ssp_stop(), SSP port disabled");
+		trace_ssp("ssp_stop(), SSP%d port disabled", dai->index);
 	}
 
 	spin_unlock(&dai->lock);
