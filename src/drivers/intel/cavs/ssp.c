@@ -136,6 +136,11 @@ static int ssp_hw_params(struct dai *dai)
 
 	spin_lock(&dai->lock);
 
+	/* enable TRSE/RSRE before SSE */
+	ssp_update_bits(dai, SSCR1,
+			SSCR1_TSRE | SSCR1_RSRE,
+			SSCR1_TSRE | SSCR1_RSRE);
+
 	/* enable port */
 	ssp_update_bits(dai, SSCR0, SSCR0_SSE, SSCR0_SSE);
 	trace_ssp("ssp_hw_params(), SSP%d port enabled", dai->index);
@@ -160,6 +165,11 @@ static int ssp_hw_free(struct dai *dai)
 	/* disable SSP port if no users */
 	if (ssp->state[SOF_IPC_STREAM_CAPTURE] != COMP_STATE_ACTIVE &&
 	    ssp->state[SOF_IPC_STREAM_PLAYBACK] != COMP_STATE_ACTIVE) {
+		/* clear TRSE/RSRE before SSE */
+		ssp_update_bits(dai, SSCR1,
+				SSCR1_TSRE | SSCR1_RSRE,
+				0);
+
 		ssp_update_bits(dai, SSCR0, SSCR0_SSE, 0);
 		ssp->state[SOF_IPC_STREAM_CAPTURE] = COMP_STATE_PREPARE;
 		ssp->state[SOF_IPC_STREAM_PLAYBACK] = COMP_STATE_PREPARE;
@@ -798,6 +808,11 @@ static void ssp_start(struct dai *dai, int direction)
 
 	if (!(ssp->params.clks_control &
 		SOF_DAI_INTEL_SSP_CLKCTRL_BCLK_ES)) {
+		/* enable TRSE/RSRE before SSE */
+		ssp_update_bits(dai, SSCR1,
+				SSCR1_TSRE | SSCR1_RSRE,
+				SSCR1_TSRE | SSCR1_RSRE);
+
 		/* enable port */
 		ssp_update_bits(dai, SSCR0, SSCR0_SSE, SSCR0_SSE);
 		trace_ssp("ssp_start(), SSP%d port enabled", dai->index);
@@ -809,10 +824,8 @@ static void ssp_start(struct dai *dai, int direction)
 
 	/* enable DMA */
 	if (direction == DAI_DIR_PLAYBACK) {
-		ssp_update_bits(dai, SSCR1, SSCR1_TSRE, SSCR1_TSRE);
 		ssp_update_bits(dai, SSTSA, 0x1 << 8, 0x1 << 8);
 	} else {
-		ssp_update_bits(dai, SSCR1, SSCR1_RSRE, SSCR1_RSRE);
 		ssp_update_bits(dai, SSRSA, 0x1 << 8, 0x1 << 8);
 	}
 
@@ -858,6 +871,11 @@ static void ssp_stop(struct dai *dai, int direction)
 	/* disable SSP port if no users */
 	if (ssp->state[SOF_IPC_STREAM_CAPTURE] != COMP_STATE_ACTIVE &&
 	    ssp->state[SOF_IPC_STREAM_PLAYBACK] != COMP_STATE_ACTIVE) {
+		/* clear TRSE/RSRE before SSE */
+		ssp_update_bits(dai, SSCR1,
+				SSCR1_TSRE | SSCR1_RSRE,
+				0);
+
 		ssp_update_bits(dai, SSCR0, SSCR0_SSE, 0);
 		ssp->state[SOF_IPC_STREAM_CAPTURE] = COMP_STATE_PREPARE;
 		ssp->state[SOF_IPC_STREAM_PLAYBACK] = COMP_STATE_PREPARE;
