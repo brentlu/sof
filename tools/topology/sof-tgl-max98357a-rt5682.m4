@@ -104,12 +104,12 @@ dnl PIPELINE_PCM_ADD(pipeline,
 dnl     pipe id, pcm, max channels, format,
 dnl     frames, deadline, priority, core)
 
-# Low Latency playback pipeline 1 on PCM 0 using max 2 channels of s24le.
+# Low Latency playback pipeline 1 on PCM 0 using max 2/4 channels of s32le.
 # Schedule 48 frames per 1000us deadline on core 0 with priority 0
 define(`ENDPOINT_NAME', `Speakers')
 PIPELINE_PCM_ADD(
 	ifdef(`WAVES', sof/pipe-waves-codec-demux-playback.m4, sof/pipe-volume-demux-playback.m4),
-	1, 0, 2, s32le,
+	1, 0, CH, s32le,
 	1000, 0, 0,
 	48000, 48000, 48000)
 undefine(`ENDPOINT_NAME')
@@ -177,9 +177,9 @@ DAI_ADD(sof/pipe-dai-playback.m4,
 # currently this dai is here as "virtual" capture backend
 W_DAI_IN(SSP, SPK_SSP_INDEX, SPK_SSP_NAME, FMT, 3, 0)
 
-# Capture pipeline 9 from demux on PCM 6 using max 2 channels of s32le.
+# Capture pipeline 9 from demux on PCM 6 using max 2/4 channels of s32le.
 PIPELINE_PCM_ADD(sof/pipe-passthrough-capture-sched.m4,
-	9, 6, 2, s32le,
+	9, 6, CH, s32le,
 	1000, 1, 0,
 	48000, 48000, 48000,
 	SCHEDULE_TIME_DOMAIN_TIMER,
@@ -282,6 +282,12 @@ ifelse(
 		SSP_CLOCK(fsync, 48000, codec_slave),
 		SSP_TDM(2, 24, 3, 3),
 		SSP_CONFIG_DATA(SSP, SPK_SSP_INDEX, 24)))',
+	CODEC, `MAX98360A-TDM', `
+	SSP_CONFIG(DSP_A, SSP_CLOCK(mclk, 19200000, codec_mclk_in),
+		SSP_CLOCK(bclk, 12288000, codec_slave),
+		SSP_CLOCK(fsync, 48000, codec_slave),
+		SSP_TDM(8, 32, 15, 15),
+		SSP_CONFIG_DATA(SSP, SPK_SSP_INDEX, 32)))',
 	CODEC, `RT1011', `
 	SSP_CONFIG(DSP_A, SSP_CLOCK(mclk, 19200000, codec_mclk_in),
 		SSP_CLOCK(bclk, 4800000, codec_slave),
