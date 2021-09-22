@@ -18,7 +18,7 @@ dnl copied to corresponding output channels in all output streams.
 dnl I.e. row index is the input channel, 1 means it is copied to
 dnl corresponding output channel (column index), 0 means it is discarded.
 dnl There's a separate matrix for all outputs.
-define(matrix1, `ROUTE_MATRIX(1,
+define(pipe_matrix1, `ROUTE_MATRIX(1,
 			     `BITS_TO_BYTE(1, 0, 0 ,0 ,0 ,0 ,0 ,0)',
 			     `BITS_TO_BYTE(1, 0, 0 ,0 ,0 ,0 ,0 ,0)',
 			     `BITS_TO_BYTE(0, 1, 0 ,0 ,0 ,0 ,0 ,0)',
@@ -29,7 +29,7 @@ define(matrix1, `ROUTE_MATRIX(1,
 			     `BITS_TO_BYTE(0, 0, 0 ,0 ,0 ,0 ,0 ,0)')')
 
 dnl name, num_streams, route_matrix list
-MUXDEMUX_CONFIG(demux_priv_1, 1, LIST(`	', `matrix1'))
+MUXDEMUX_CONFIG(demux_priv_1, 1, LIST(`	', `pipe_matrix1'))
 
 # demux Bytes control with max value of 255
 C_CONTROLBYTES(concat(`DEMUX', PIPELINE_ID), PIPELINE_ID,
@@ -135,6 +135,6 @@ indir(`define', concat(`PIPELINE_PCM_', PIPELINE_ID), Speaker Playback PCM_ID)
 # PCM capabilities supported by FW
 PCM_CAPABILITIES(Speaker Playback PCM_ID, CAPABILITY_FORMAT_NAME(PIPELINE_FORMAT), 48000, 48000, 2, PIPELINE_CHANNELS, 2, 16, 192, 16384, 65536, 65536)
 
-undefine(`matrix1')
+undefine(`pipe_matrix1')
 undefine(`DEF_EQIIR_COEF')
 undefine(`DEF_EQIIR_PRIV')
