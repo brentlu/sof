@@ -133,6 +133,7 @@ set(TPLGS
 	"sof-tgl-max98357a-rt5682\;sof-adl-max98357a-rt5682\;-DCODEC=MAX98357A\;-DFMT=s16le\;-DCH=2\;-DPLATFORM=adl\;-DAMP_SSP=2"
 	"sof-tgl-max98357a-rt5682\;sof-adl-max98360a-rt5682\;-DCODEC=MAX98360A\;-DFMT=s24le\;-DCH=2\;-DPLATFORM=adl\;-DAMP_SSP=1"
 	"sof-tgl-max98357a-rt5682\;sof-adl-max98360a-4ch-rt5682\;-DCODEC=MAX98360A-TDM\;-DFMT=s32le\;-DCH=4\;-DPLATFORM=adl\;-DAMP_SSP=1"
+	"sof-tgl-max98357a-rt5682\;sof-adl-max98360a-rt5682-felwinter\;-DCODEC=MAX98360A-TDM\;-DFMT=s32le\;-DCH=2\;-DPLATFORM=adl\;-DAMP_SSP=1\;-DFELWINTER"
 	"sof-tgl-max98357a-rt5682\;sof-tgl-max98357a-rt5682-pdm1\;-DCODEC=MAX98357A\;-DFMT=s16le\;-DCH=2\;-DDMIC_DAI_LINK_16k_PDM=STEREO_PDM1\;\;-DPLATFORM=tgl\;-DAMP_SSP=1"
 	"sof-tgl-max98357a-rt5682\;sof-tgl-rt1011-rt5682\;-DCODEC=RT1011\;-DFMT=s24le\;-DCH=2\;-DPLATFORM=tgl\;-DAMP_SSP=1"
 	"sof-tgl-max98373-rt5682\;sof-tgl-max98373-rt5682\;-DAMP_SSP=1"

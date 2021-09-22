@@ -108,7 +108,7 @@ dnl     frames, deadline, priority, core)
 # Schedule 48 frames per 1000us deadline on core 0 with priority 0
 define(`ENDPOINT_NAME', `Speakers')
 PIPELINE_PCM_ADD(
-	ifdef(`WAVES', sof/pipe-waves-codec-demux-playback.m4, sof/pipe-volume-demux-playback.m4),
+	ifdef(`WAVES', sof/pipe-waves-codec-demux-playback.m4, ifdef(`FELWINTER', sof/pipe-demux-eq-iir-playback.m4, sof/pipe-volume-demux-playback.m4)),
 	1, 0, CH, s32le,
 	1000, 0, 0,
 	48000, 48000, 48000)
@@ -177,6 +177,7 @@ DAI_ADD(sof/pipe-dai-playback.m4,
 # currently this dai is here as "virtual" capture backend
 W_DAI_IN(SSP, SPK_SSP_INDEX, SPK_SSP_NAME, FMT, 3, 0)
 
+ifdef(`FELWINTER',`',`
 # Capture pipeline 9 from demux on PCM 6 using max 2/4 channels of s32le.
 PIPELINE_PCM_ADD(sof/pipe-passthrough-capture-sched.m4,
 	9, 6, CH, s32le,
@@ -204,6 +205,7 @@ SectionGraph."PIPE_CAP_VIRT" {
 		dapm(ECHO REF 9, SPK_REF_DAI_NAME)
 	]
 }
+')
 
 # playback DAI is SSP0 using 2 periods
 # Buffers use s24le format, with 48 frame per 1000us on core 0 with priority 0
