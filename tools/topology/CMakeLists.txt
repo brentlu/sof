@@ -160,6 +160,7 @@ set(TPLGS
 	"sof-jsl-rt5682\;sof-jsl-rt5682-rt1015\;-DPLATFORM=jsl-rt1015"
 	"sof-jsl-rt5682\;sof-jsl-rt5682-rt1015-xperi\;-DPLATFORM=jsl-rt1015\;-DINCLUDE_IIR_EQ=1"
 	"sof-jsl-rt5682\;sof-jsl-rt5682-mx98360a\;-DPLATFORM=jsl-dedede"
+	"sof-adl-amp-only\;sof-adl-cs35l41\;-DPLATFORM=adl\;-DAMP=CS35L41\;-DAMP_TYPE=SMART\;-DAMP_FMT=s24le\;-DAMP_SSP=1"
 )
 
 add_custom_target(topologies ALL)
