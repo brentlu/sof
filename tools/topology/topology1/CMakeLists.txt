@@ -192,6 +192,7 @@ set(TPLGS
 	"sof-glk-es8336\;sof-tgl-es8336-dmic2ch-ssp0\;-DPLATFORM=tgl\;-DSSP_NUM=0\;-DCHANNELS=2"
 	"sof-glk-es8336\;sof-tgl-es8336-dmic4ch-ssp2\;-DPLATFORM=tgl\;-DSSP_NUM=2\;-DCHANNELS=4"
 	"sof-glk-es8336\;sof-tgl-es8336-dmic4ch-ssp0\;-DPLATFORM=tgl\;-DSSP_NUM=0\;-DCHANNELS=4"
+	"sof-adl-amp-only\;sof-adl-cs35l41\;-DPLATFORM=adl\;-DAMP=CS35L41\;-DAMP_TYPE=SMART\;-DAMP_FMT=s24le\;-DAMP_SSP=1"
 
 	"sof-imx8-nocodec\;sof-imx8-nocodec"
 	"sof-imx8-cs42888\;sof-imx8-cs42888"
