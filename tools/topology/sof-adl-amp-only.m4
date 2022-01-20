@@ -310,10 +310,10 @@ dnl ssp1-maxmspk
 DAI_CONFIG(SSP, SPK_SSP_INDEX, SPK_BE_ID, SPK_SSP_NAME,
 ifelse(
 	AMP, `CS35L41', `
-	SSP_CONFIG(DSP_A, SSP_CLOCK(mclk, 19200000, codec_mclk_in),
-		SSP_CLOCK(bclk, 6144000, codec_slave),
+	SSP_CONFIG(I2S, SSP_CLOCK(mclk, 19200000, codec_mclk_in),
+		SSP_CLOCK(bclk, 3072000, codec_slave),
 		SSP_CLOCK(fsync, 48000, codec_slave),
-		SSP_TDM(4, 32, 3, 15),
+		SSP_TDM(2, 32, 3, 3),
 		SSP_CONFIG_DATA(SSP, SPK_SSP_INDEX, 24)))',
 	)
 
