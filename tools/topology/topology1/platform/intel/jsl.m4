@@ -5,7 +5,7 @@
 include(`platform/intel/icl.m4')
 
 define(`SPK_INDEX', `1')
-define(`SPK_NAME', `SSP1-Codec')
+define(`SPK_NAME', `SSP-SPK')
 
 undefine(`SPK_DATA_FORMAT')
 define(`SPK_DATA_FORMAT', `s16le')

@@ -23,8 +23,8 @@ DEBUG_START
 #
 # Define the pipelines
 #
-# PCM0 ----> volume -----> SSP1  (Speaker - ALC1015)
-# PCM1 <---> volume <----> SSP0  (Headset - ALC5682)
+# PCM0 ----> volume -----> SSP-SPK  (Speaker - ALC1015)
+# PCM1 <---> volume <----> SSP-HP  (Headset - ALC5682)
 # PCM2 ----> volume -----> iDisp1
 # PCM3 ----> volume -----> iDisp2
 # PCM4 ----> volume -----> iDisp3
@@ -113,24 +113,24 @@ dnl     pipe id, dai type, dai_index, dai_be,
 dnl     buffer, periods, format,
 dnl     frames, deadline, priority, core)
 
-# playback DAI is SSP1 using 2 periods
+# playback DAI is SSP-SPK using 2 periods
 # Buffers use s24le format, with 48 frame per 1000us on core 0 with priority 0
 DAI_ADD(sof/pipe-dai-playback.m4,
 	1, SSP, SPK_INDEX, SPK_NAME,
 	PIPELINE_SOURCE_1, 2, SPK_DATA_FORMAT,
 	1000, 0, 0, SCHEDULE_TIME_DOMAIN_TIMER)
 
-# playback DAI is SSP0 using 2 periods
+# playback DAI is SSP-HP using 2 periods
 # Buffers use s24le format, with 48 frame per 1000us on core 0 with priority 0
 DAI_ADD(sof/pipe-dai-playback.m4,
-	2, SSP, 0, SSP0-Codec,
+	2, SSP, 0, SSP-HP,
 	PIPELINE_SOURCE_2, 2, s24le,
 	1000, 0, 0, SCHEDULE_TIME_DOMAIN_TIMER)
 
-# capture DAI is SSP0 using 2 periods
+# capture DAI is SSP-HP using 2 periods
 # Buffers use s24le format, with 48 frame per 1000us on core 0 with priority 0
 DAI_ADD(sof/pipe-dai-capture.m4,
-	3, SSP, 0, SSP0-Codec,
+	3, SSP, 0, SSP-HP,
 	PIPELINE_SINK_3, 2, s24le,
 	1000, 0, 0, SCHEDULE_TIME_DOMAIN_TIMER)
 
@@ -173,7 +173,7 @@ dnl SSP_CLOCK(clock, freq, codec_master, polarity)
 dnl SSP_CONFIG_DATA(type, idx, valid bits, mclk_id)
 
 # SSP 0 (ID: 0) ALC5682
-DAI_CONFIG(SSP, 0, 0, SSP0-Codec,
+DAI_CONFIG(SSP, 0, 0, SSP-HP,
 	SSP_CONFIG(I2S, SSP_CLOCK(mclk, 24000000, codec_mclk_in),
 		SSP_CLOCK(bclk, 2400000, codec_slave),
 		SSP_CLOCK(fsync, 48000, codec_slave),
