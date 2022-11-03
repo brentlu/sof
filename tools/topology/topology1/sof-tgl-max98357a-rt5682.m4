@@ -96,16 +96,16 @@ ifdef(`GOOGLE_RTC_AUDIO_PROCESSING',
 #
 ifdef(`2CH_2WAY',`
 ifdef(`WAVES',`
-# PCM0 --> waves --> demux(2to4-ch) --> eq_iir --> SSP$AMP_SSP (Speaker - CODEC)',`
-# PCM0 --> demux(2to4-ch) --> eq_iir --> SSP$AMP_SSP (Speaker - CODEC)')',`
+# PCM0 --> waves --> demux(2to4-ch) --> eq_iir --> SSP-SPK (Speaker - CODEC)',`
+# PCM0 --> demux(2to4-ch) --> eq_iir --> SSP-SPK (Speaker - CODEC)')',`
 ifdef(`WAVES',`
-# PCM0 --> waves --> volume --> demux --> SSP$AMP_SSP (Speaker - CODEC)
+# PCM0 --> waves --> volume --> demux --> SSP-SPK (Speaker - CODEC)
 #                                 |
 # PCM6 <--------------------------+',`
-# PCM0 --> volume --> demux --> SSP$AMP_SSP (Speaker - CODEC)
+# PCM0 --> volume --> demux --> SSP-SPK (Speaker - CODEC)
 #                       |
 # PCM6 <----------------+')')
-# PCM1 <---> volume <----> SSP0  (Headset - ALC5682)
+# PCM1 <---> volume <----> SSP-HP  (Headset - ALC5682)
 # PCM99 <---- volume <----- DMIC01 (dmic0 capture)
 # PCM2 ----> volume -----> iDisp1
 # PCM3 ----> volume -----> iDisp2
@@ -124,7 +124,7 @@ ifdef(`AMP_SSP',`',`fatal_error(note: Define AMP_SSP for speaker amp SSP Index)'
 # define speaker SSP index
 define(`SPK_SSP_INDEX', AMP_SSP)
 # define SSP BE dai_link name
-define(`SPK_SSP_NAME', concat(concat(`SSP', SPK_SSP_INDEX),`-Codec'))
+define(`SPK_SSP_NAME', `SSP-SPK')
 # define BE dai_link ID
 define(`SPK_BE_ID', BOARD_SPK_BE_ID)
 # Ref capture related
@@ -257,7 +257,7 @@ dnl     buffer, periods, format,
 dnl     frames, deadline, priority, core)
 
 ifdef(`NO_AMP',`',`
-# playback DAI is SSP1 using 2 periods
+# playback DAI is SSP-SPK using 2 periods
 # Buffers use s16le format, with 48 frame per 1000us on core 0 with priority 0
 DAI_ADD(sof/pipe-dai-playback.m4,
 	1, SSP, SPK_SSP_INDEX, SPK_SSP_NAME,
@@ -272,7 +272,7 @@ PIPELINE_PCM_ADD(sof/pipe-passthrough-capture.m4,
 	SPK_MIC_PERIOD_US, 0, SPK_PLAYBACK_CORE,
 	48000, 48000, 48000)
 
-# capture DAI is SSP1 using 2 periods
+# capture DAI is SSP-SPK using 2 periods
 # Buffers use FMT format, with 48 frame per 1000us on core 0 with priority 0
 DAI_ADD(sof/pipe-dai-capture.m4,
 	9, SSP, SPK_SSP_INDEX, SPK_SSP_NAME,
@@ -286,7 +286,7 @@ PIPELINE_PCM_ADD(sof/pipe-passthrough-capture.m4,
 	SPK_MIC_PERIOD_US, 0, SPK_PLAYBACK_CORE,
 	48000, 48000, 48000)
 
-# capture DAI is SSP1 using 2 periods
+# capture DAI is SSP-SPK using 2 periods
 # Buffers use FMT format, with 48 frame per 1000us on core 0 with priority 0
 DAI_ADD(sof/pipe-dai-capture.m4,
 	9, SSP, SPK_SSP_INDEX, SPK_SSP_NAME,
@@ -345,17 +345,17 @@ dnl else
 , `')
 
 ifdef(`NO_HEADPHONE',`',`
-# playback DAI is SSP0 using 2 periods
+# playback DAI is SSP-HP using 2 periods
 # Buffers use s24le format, with 48 frame per 1000us on core 0 with priority 0
 DAI_ADD(sof/pipe-dai-playback.m4,
-	2, SSP, 0, SSP0-Codec,
+	2, SSP, 0, SSP-HP,
 	PIPELINE_SOURCE_2, 2, s24le,
 	1000, 0, 0, SCHEDULE_TIME_DOMAIN_TIMER)
 
-# capture DAI is SSP0 using 2 periods
+# capture DAI is SSP-HP using 2 periods
 # Buffers use s24le format, with 48 frame per 1000us on core 0 with priority 0
 DAI_ADD(sof/pipe-dai-capture.m4,
-	3, SSP, 0, SSP0-Codec,
+	3, SSP, 0, SSP-HP,
 	PIPELINE_SINK_3, 2, s24le,
 	1000, 0, 0, SCHEDULE_TIME_DOMAIN_TIMER)')
 
@@ -461,7 +461,7 @@ ifelse(
 
 ifdef(`NO_HEADPHONE',`',`
 # SSP 0 (ID: BOARD_HP_BE_ID)
-DAI_CONFIG(SSP, 0, BOARD_HP_BE_ID, SSP0-Codec,
+DAI_CONFIG(SSP, 0, BOARD_HP_BE_ID, SSP-HP,
 	SSP_CONFIG(I2S, SSP_CLOCK(mclk, 19200000, codec_mclk_in),
 		SSP_CLOCK(bclk, 2400000, codec_slave),
 		SSP_CLOCK(fsync, 48000, codec_slave),
