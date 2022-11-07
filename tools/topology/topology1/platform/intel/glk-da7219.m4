@@ -5,7 +5,7 @@ undefine(`SSP_INDEX')
 define(`SSP_INDEX', 2)
 
 undefine(`SSP_NAME')
-define(`SSP_NAME', `SSP2-Codec')
+define(`SSP_NAME', `SSP-HP')
 
 undefine(`DMIC_PCM_NUM')
 define(`DMIC_PCM_NUM', `99')

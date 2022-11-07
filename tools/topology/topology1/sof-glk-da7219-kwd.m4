@@ -31,11 +31,11 @@ define(`SSP1_VALID_BITS', 32)')
 #
 # Define the pipelines
 #
-# PCM0  ----> volume (pipe 1)   -----> SSP1 (speaker - maxim98357a, BE link 0)
-# PCM1  <---> volume (pipe 2,3) <----> SSP(SSP_INDEX) (headset - dailog7219, BE link 1)
+# PCM0  ----> volume (pipe 1)   -----> SSP-SPK (speaker - maxim98357a, BE link 0)
+# PCM1  <---> volume (pipe 2,3) <----> SSP-HP(SSP_INDEX) (headset - dailog7219, BE link 1)
 # PCM(DMIC_PCM_NUM) <---- DMIC0 (dmic capture, BE link 2)
 ifelse(CODEC, `MAX98390',`
-# PCM4  <---- passthrough (pipe 10)  <----- SSP1 (echoref - maxim98390, BE link 0)')
+# PCM4  <---- passthrough (pipe 10)  <----- SSP-SPK (echoref - maxim98390, BE link 0)')
 # PCM5  ----> volume (pipe 5)   -----> iDisp1 (HDMI/DP playback, BE link 3)
 # PCM6  ----> volume (pipe 6)   -----> iDisp2 (HDMI/DP playback, BE link 4)
 # PCM7  ----> volume (pipe 7)   -----> iDisp3 (HDMI/DP playback, BE link 5)
@@ -116,29 +116,29 @@ dnl     pipe id, dai type, dai_index, dai_be,
 dnl     buffer, periods, format,
 dnl     deadline, priority, core, time_domain)
 
-# playback DAI is SSP1 using 2 periods
+# playback DAI is SSP-SPK using 2 periods
 # Buffers use s16le format, 1000us deadline with priority 0 on core 0
 DAI_ADD(sof/pipe-dai-playback.m4,
-	1, SSP, 1, SSP1-Codec,
+	1, SSP, 1, SSP-SPK,
 	PIPELINE_SOURCE_1, 2, SSP1_VALID_BITS_STR,
 	1000, 0, 0, SCHEDULE_TIME_DOMAIN_TIMER)
 
 ifelse(CODEC, `MAX98390',`
-# Capture DAI is SSP1 using 2 periods
+# Capture DAI is SSP-SPK using 2 periods
 # Buffers use s24le format, with 48 frame per 1000us on core 0 with priority 0
 DAI_ADD(sof/pipe-dai-capture.m4,
-        10, SSP, 1, SSP1-Codec,
+        10, SSP, 1, SSP-SPK,
         PIPELINE_SINK_10, 2, SSP1_VALID_BITS_STR,
         1000, 0, 0, SCHEDULE_TIME_DOMAIN_TIMER)')
 
-# playback DAI is SSP(SSP_INDEX) using 2 periods
+# playback DAI is SSP-HP(SSP_INDEX) using 2 periods
 # Buffers use s16le format, 1000us deadline with priority 0 on core 0
 DAI_ADD(sof/pipe-dai-playback.m4,
 	2, SSP, SSP_INDEX, SSP_NAME,
 	PIPELINE_SOURCE_2, 2, s16le,
 	1000, 0, 0, SCHEDULE_TIME_DOMAIN_TIMER)
 
-# capture DAI is SSP(SSP_INDEX) using 2 periods
+# capture DAI is SSP-HP(SSP_INDEX) using 2 periods
 # Buffers use s16le format, 1000us deadline with priority 0 on core 0
 DAI_ADD(sof/pipe-dai-capture.m4,
 	3, SSP, SSP_INDEX, SSP_NAME,
@@ -229,7 +229,7 @@ SectionGraph."pipe-sof-PLATFORM-keyword-detect" {
 # BE configurations - overrides config in ACPI if present
 #
 
-DAI_CONFIG(SSP, 1, 0, SSP1-Codec,
+DAI_CONFIG(SSP, 1, 0, SSP-SPK,
         SSP_CONFIG(I2S, SSP_CLOCK(mclk, SSP_MCLK_RATE, codec_mclk_in),
                 SSP_CLOCK(bclk, SSP1_BCLK, codec_slave),
                 SSP_CLOCK(fsync, SSP_FSYNC, codec_slave),

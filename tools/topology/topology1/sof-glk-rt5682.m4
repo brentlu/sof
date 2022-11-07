@@ -25,8 +25,8 @@ include(`platform/intel/dmic.m4')
 #
 # Define the pipelines
 #
-# PCM0  ----> volume (pipe 1)   -----> SSP1 (speaker - maxim98357a, BE link 0)
-# PCM1  <---> volume (pipe 2,3) <----> SSP2 (headset - rt5682, BE link 1)
+# PCM0  ----> volume (pipe 1)   -----> SSP-SPK (speaker - maxim98357a, BE link 0)
+# PCM1  <---> volume (pipe 2,3) <----> SSP-HP (headset - rt5682, BE link 1)
 # PCM99 <---- DMIC0 (dmic capture, BE link 2)
 # PCM5  ----> volume (pipe 5)   -----> iDisp1 (HDMI/DP playback, BE link 3)
 # PCM6  ----> Volume (pipe 6)   -----> iDisp2 (HDMI/DP playback, BE link 4)
@@ -101,24 +101,24 @@ dnl     pipe id, dai type, dai_index, dai_be,
 dnl     buffer, periods, format,
 dnl     deadline, priority, core, time_domain)
 
-# playback DAI is SSP1 using 2 periods
+# playback DAI is SSP-SPK using 2 periods
 # Buffers use s16le format, 1000us deadline with priority 0 on core 0
 DAI_ADD(sof/pipe-dai-playback.m4,
-	1, SSP, 1, SSP1-Codec,
+	1, SSP, 1, SSP-SPK,
 	PIPELINE_SOURCE_1, 2, s16le,
 	1000, 0, 0, SCHEDULE_TIME_DOMAIN_TIMER)
 
-# playback DAI is SSP1 using 2 periods
+# playback DAI is SSP-HP using 2 periods
 # Buffers use s16le format, 1000us deadline with priority 0 on core 0
 DAI_ADD(sof/pipe-dai-playback.m4,
-	2, SSP, 2, SSP2-Codec,
+	2, SSP, 2, SSP-HP,
 	PIPELINE_SOURCE_2, 2, s16le,
 	1000, 0, 0, SCHEDULE_TIME_DOMAIN_TIMER)
 
-# capture DAI is SSP1 using 2 periods
+# capture DAI is SSP-HP using 2 periods
 # Buffers use s16le format, 1000us deadline with priority 0 on core 0
 DAI_ADD(sof/pipe-dai-capture.m4,
-	3, SSP, 2, SSP2-Codec,
+	3, SSP, 2, SSP-HP,
 	PIPELINE_SINK_3, 2, s16le,
 	1000, 0, 0, SCHEDULE_TIME_DOMAIN_TIMER)
 
@@ -162,7 +162,7 @@ PCM_PLAYBACK_ADD(HDMI3, 7, PIPELINE_PCM_7)
 #
 
 #SSP 1 (ID: 0) with 19.2 MHz mclk with MCLK_ID 1 (unused), 1.536 MHz blck
-DAI_CONFIG(SSP, 1, 0, SSP1-Codec,
+DAI_CONFIG(SSP, 1, 0, SSP-SPK,
 	SSP_CONFIG(I2S, SSP_CLOCK(mclk, 19200000, codec_mclk_in),
 		SSP_CLOCK(bclk, 1536000, codec_slave),
 		SSP_CLOCK(fsync, 48000, codec_slave),
@@ -170,7 +170,7 @@ DAI_CONFIG(SSP, 1, 0, SSP1-Codec,
 		SSP_CONFIG_DATA(SSP, 1, 16, 1)))
 
 #SSP 2 (ID: 1) with 19.2 MHz mclk with MCLK_ID 1, 2.4 MHz bclk
-DAI_CONFIG(SSP, 2, 1, SSP2-Codec,
+DAI_CONFIG(SSP, 2, 1, SSP-HP,
 	SSP_CONFIG(I2S, SSP_CLOCK(mclk, 19200000, codec_mclk_in),
 		SSP_CLOCK(bclk, 2400000, codec_slave),
 		SSP_CLOCK(fsync, 48000, codec_slave),
