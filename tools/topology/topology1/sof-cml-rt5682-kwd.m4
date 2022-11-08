@@ -35,7 +35,7 @@ define(DMIC_16k_PCM_NAME, DMIC16kHz)
 #
 # Define the pipelines
 #
-# PCM0 <---> volume <----> SSP(SSP_INDEX, BE link 0)
+# PCM0 <---> volume <----> SSP-HP(SSP_INDEX, BE link 0)
 # PCM1 <---- DMICPROC <--- DMIC01 (dmic0 capture, , BE link 1)
 # PCM2 ----> volume -----> iDisp1 (HDMI/DP playback, BE link 3)
 # PCM3 ----> volume -----> iDisp2 (HDMI/DP playback, BE link 4)
@@ -108,14 +108,14 @@ dnl     pipe id, dai type, dai_index, dai_be,
 dnl     buffer, periods, format,
 dnl     deadline, priority, core, time_domain)
 
-# playback DAI is SSP(SPP_INDEX) using 2 periods
+# playback DAI is SSP-HP(SPP_INDEX) using 2 periods
 # Buffers use s24le format, with 48 frame per 1000us on core 0 with priority 0
 DAI_ADD(sof/pipe-dai-playback.m4,
 	1, SSP, SSP_INDEX, SSP_NAME,
 	PIPELINE_SOURCE_1, 2, s24le,
 	1000, 0, 0, SCHEDULE_TIME_DOMAIN_TIMER)
 
-# capture DAI is SSP(SSP_INDEX) using 2 periods
+# capture DAI is SSP-HP(SSP_INDEX) using 2 periods
 # Buffers use s24le format, with 48 frame per 1000us on core 0 with priority 0
 DAI_ADD(sof/pipe-dai-capture.m4,
 	2, SSP,SSP_INDEX, SSP_NAME,

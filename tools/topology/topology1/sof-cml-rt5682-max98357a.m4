@@ -1,7 +1,7 @@
 #
-# Topology for Cometlake with rt5682 headset on SSP0, max98357a spk on SSP1
+# Topology for Cometlake with rt5682 headset on SSP-HP, max98357a spk on SSP-SPK
 #
-# Adding max98357a spk on SSP1 on top of sof-cml-rt5682.
+# Adding max98357a spk on SSP-SPK on top of sof-cml-rt5682.
 #
 
 # Include SOF CML RT5682 Topology
@@ -13,7 +13,7 @@ DEBUG_START
 #
 # Define the Speaker pipeline
 #
-# PCM5  ----> volume (pipe 7) ----> SSP1 (speaker - maxim98357a, BE link 5)
+# PCM5  ----> volume (pipe 7) ----> SSP-SPK (speaker - maxim98357a, BE link 5)
 #
 
 dnl PIPELINE_PCM_ADD(pipeline,

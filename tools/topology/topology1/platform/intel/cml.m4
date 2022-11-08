@@ -6,7 +6,7 @@ undefine(`SSP_INDEX')
 define(`SSP_INDEX', 0)
 
 undefine(`SSP_NAME')
-define(`SSP_NAME', `SSP0-Codec')
+define(`SSP_NAME', `SSP-HP')
 
 undefine(`SSP_MCLK_RATE')
 define(`SSP_MCLK_RATE', `24000000')
@@ -14,7 +14,7 @@ define(`SSP_MCLK_RATE', `24000000')
 
 #SSP1 setting for CML platform
 define(`SSP1_INDEX', 1)
-define(`SSP1_NAME', `SSP1-Codec')
+define(`SSP1_NAME', `SSP-SPK')
 define(`SSP1_MCLK_RATE', `24000000')
 
 ifelse(SOF_ABI_VERSION_3_9_OR_GRT, `1',

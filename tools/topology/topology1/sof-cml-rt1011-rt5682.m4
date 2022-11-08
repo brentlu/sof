@@ -1,5 +1,5 @@
 #
-# Topology for Cometlake with rt1011 spk on SSP1
+# Topology for Cometlake with rt1011 spk on SSP-SPK
 #
 
 # if XPROC is not defined, define with default pipe
@@ -17,7 +17,7 @@ DEBUG_START
 #
 # Define the Speaker pipeline
 #
-# PCM5  ----> volume (pipe 7) ----> SSP1 (speaker - rt1011, BE link 5)
+# PCM5  ----> volume (pipe 7) ----> SSP-SPK (speaker - rt1011, BE link 5)
 #
 
 # The pipeline naming notation is pipe-PROCESSING-DIRECTION.m4
@@ -46,10 +46,10 @@ dnl     pipe id, dai type, dai_index, dai_be,
 dnl     buffer, periods, format,
 dnl     deadline, priority, core, time_domain)
 
-# playback DAI is SSP1 using 2 periods
+# playback DAI is SSP-SPK using 2 periods
 # Buffers use s16le format, with 48 frame per 1000us on core 0 with priority 0
 DAI_ADD(sof/pipe-dai-playback.m4,
-	7, SSP, 1, SSP1-Codec,
+	7, SSP, 1, SSP-SPK,
 	PIPELINE_SOURCE_7, 2, s24le,
 	1000, 0, 0, SCHEDULE_TIME_DOMAIN_TIMER)
 
