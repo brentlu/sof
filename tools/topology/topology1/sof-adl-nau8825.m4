@@ -31,14 +31,14 @@ include(`muxdemux.m4')
 #
 # Define the demux configure
 #
-# PCM0 --> volume --> demux --> SSP1/SSP2 (speaker - max98360a/rt1019)
+# PCM0 --> volume --> demux --> SSP-SPK (speaker - max98360a/rt1019)
 #                       |
 # PCM6 <----------------+
 
 #define speaker SSP index
 define(`SPK_SSP_INDEX', AMP_SSP)
 # define SSP BE dai_link name
-define(`SPK_SSP_NAME', concat(concat(`SSP', SPK_SSP_INDEX),`-Codec'))
+define(`SPK_SSP_NAME', `SSP-SPK')
 # define BE dai_link ID
 define(`SPK_BE_ID', 7)
 # Ref capture related
@@ -78,18 +78,18 @@ dnl name, num_streams, route_matrix list
 
 ifdef(`NO_AMP',,`
 ifdef(`SMART_AMP',`
-# PCM0 ----> smart_amp ----> SSP1 (Speaker - max98373)
+# PCM0 ----> smart_amp ----> SSP-SPK (Speaker - max98373)
 #              ^
 #              |
 #              |
-# PCM0 <---- demux <----- SSP1 (Speaker - max98373)')')
-# PCM1 <---> volume <----> SSP0  (Headset - NAU8825)
+# PCM0 <---- demux <----- SSP-SPK (Speaker - max98373)')')
+# PCM1 <---> volume <----> SSP-HP  (Headset - NAU8825)
 # PCM2 ----> volume -----> iDisp1
 # PCM3 ----> volume -----> iDisp2
 # PCM4 ----> volume -----> iDisp3
 # PCM5 ----> volume -----> iDisp4
 ifdef(`BT_OFFLOAD', `
-# PCM7 ----> passthrough ----> SSP2 (Bluetooth)')
+# PCM7 ----> passthrough ----> SSP-BT (Bluetooth)')
 # PCM99 <---- volume <---- DMIC01 (dmic 48k capture)
 # PCM100 <---- kpb <---- DMIC16K (dmic 16k capture)
 
@@ -100,7 +100,7 @@ ifdef(`SMART_AMP',`
 #define smart amplifier SSP index
 define(`SMART_SSP_INDEX', AMP_SSP)
 #define SSP BE dai_link name
-define(`SMART_SSP_NAME', concat(concat(`SSP', AMP_SSP),`-Codec'))
+define(`SMART_SSP_NAME', `SSP-SPK')
 #define BE dai_link ID
 define(`SMART_BE_ID', 7)
 #define SSP mclk
@@ -225,17 +225,17 @@ dnl     pipe id, dai type, dai_index, dai_be,
 dnl     buffer, periods, format,
 dnl     deadline, priority, core, time_domain)
 
-# playback DAI is SSP0 using 2 periods
+# playback DAI is SSP-HP using 2 periods
 # Buffers use s32le format, with 48 frame per 1000us on core 0 with priority 0
 DAI_ADD(sof/pipe-dai-playback.m4,
-        2, SSP, 0, SSP0-Codec,
+        2, SSP, 0, SSP-HP,
         PIPELINE_SOURCE_2, 2, s32le,
         1000, 0, 0, SCHEDULE_TIME_DOMAIN_TIMER)
 
-# capture DAI is SSP0 using 2 periods
+# capture DAI is SSP-HP using 2 periods
 # Buffers use s32le format, with 48 frame per 1000us on core 0 with priority 0
 DAI_ADD(sof/pipe-dai-capture.m4,
-        3, SSP, 0, SSP0-Codec,
+        3, SSP, 0, SSP-HP,
         PIPELINE_SINK_3, 2, s32le,
         1000, 0, 0, SCHEDULE_TIME_DOMAIN_TIMER)
 
@@ -269,7 +269,7 @@ DAI_ADD(sof/pipe-dai-playback.m4,
 
 ifdef(`NO_AMP',,`
 ifdef(`SMART_AMP',,`
-# playback DAI is SSP1 using 2 periods
+# playback DAI is SSP-SPK using 2 periods
 # Buffers use s16le format, with 48 frame per 1000us on core 0 with priority 0
 DAI_ADD(sof/pipe-dai-playback.m4,
         1, SSP, SPK_SSP_INDEX, SPK_SSP_NAME,
@@ -336,7 +336,7 @@ dnl mclk_id is optional
 dnl ssp1-maxmspk
 
 #SSP 0 (ID: 0)
-DAI_CONFIG(SSP, 0, 0, SSP0-Codec,
+DAI_CONFIG(SSP, 0, 0, SSP-HP,
         SSP_CONFIG(I2S, SSP_CLOCK(mclk, SSP_MCLK, codec_mclk_in),
                       SSP_CLOCK(bclk, 3072000, codec_slave),
                       SSP_CLOCK(fsync, 48000, codec_slave),
