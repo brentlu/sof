@@ -101,39 +101,69 @@ static void ssp_empty_rx_fifo(struct dai *dai)
 	ssp_update_bits(dai, SSSR, SSSR_ROR, SSSR_ROR);
 }
 
-static int ssp_mclk_prepare_enable(struct dai *dai)
+static int ssp_mclk_prepare_enable(struct dai *dai, uint32_t requester)
 {
 	struct ssp_pdata *ssp = dai_get_drvdata(dai);
 	struct sof_ipc_dai_config *config = &ssp->config;
-	int ret;
+	int ret = 0;
 
-	if (ssp->clk_active & SSP_CLK_MCLK_ACTIVE)
+	if ((ssp->clk_request & requester) &&
+	    requester != SSP_CLK_MCLK_AON_REQ) {
+		dai_info(dai, "ssp_mclk_prepare_enable(): unbalanced call for SSP%d, requester 0x%x, clk_request 0x%x",
+			 dai->index, requester, ssp->clk_request);
 		return 0;
+	}
+
+	ssp->clk_request |= requester;
+
+	if (ssp->mclk_ref) /* already enabled */
+		goto out;
 
 	/* MCLK config */
 	ret = mn_set_mclk(config->ssp.mclk_id, config->ssp.mclk_rate);
 	if (ret < 0)
 		dai_err(dai, "ssp_mclk_prepare_enable(): invalid mclk_rate = %d for mclk_id = %d",
 			config->ssp.mclk_rate, config->ssp.mclk_id);
-	else
-		ssp->clk_active |= SSP_CLK_MCLK_ACTIVE;
+
+	dai_info(dai, "ssp_mclk_prepare_enable(): enable mclk for SSP%d",
+		 dai->index);
+
+out:
+	if (!ret)
+		ssp->mclk_ref++;
 
 	return ret;
 }
 
-static void ssp_mclk_disable_unprepare(struct dai *dai)
+static void ssp_mclk_disable_unprepare(struct dai *dai, uint32_t requester)
 {
 	struct ssp_pdata *ssp = dai_get_drvdata(dai);
 
-	if (!(ssp->clk_active & SSP_CLK_MCLK_ACTIVE))
+	if (!(ssp->clk_request & requester)) {
+		dai_info(dai, "ssp_mclk_disable_unprepare(): unbalanced call for SSP%d, requester 0x%x, clk_request 0x%x",
+			 dai->index, requester, ssp->clk_request);
+		return;
+	}
+
+	ssp->clk_request &= ~requester;
+
+	if (!ssp->mclk_ref) {
+		dai_err(dai, "ssp_mclk_disable_unprepare(): unbalanced ref count");
+		return;
+	}
+
+	ssp->mclk_ref--;
+
+	if (ssp->mclk_ref) /* still needs it */
 		return;
 
-	mn_release_mclk(ssp->config.ssp.mclk_id);
+	dai_info(dai, "ssp_mclk_disable_unprepare(): disable mclk for SSP%d",
+		 dai->index);
 
-	ssp->clk_active &= ~SSP_CLK_MCLK_ACTIVE;
+	mn_release_mclk(ssp->config.ssp.mclk_id);
 }
 
-static int ssp_bclk_prepare_enable(struct dai *dai)
+static int ssp_bclk_prepare_enable(struct dai *dai, uint32_t requester)
 {
 	struct ssp_pdata *ssp = dai_get_drvdata(dai);
 	struct sof_ipc_dai_config *config = &ssp->config;
@@ -142,8 +172,16 @@ static int ssp_bclk_prepare_enable(struct dai *dai)
 	bool need_ecs = false;
 	int ret = 0;
 
-	if (ssp->clk_active & SSP_CLK_BCLK_ACTIVE)
+	if (ssp->clk_request & requester) {
+		dai_info(dai, "ssp_bclk_prepare_enable(): unbalanced call for SSP%d, requester 0x%x, clk_request 0x%x",
+			 dai->index, requester, ssp->clk_request);
 		return 0;
+	}
+
+	ssp->clk_request |= requester;
+
+	if (ssp->bclk_ref) /* already enabled */
+		goto out;
 
 	sscr0 = ssp_read(dai, SSCR0);
 
@@ -188,23 +226,57 @@ static int ssp_bclk_prepare_enable(struct dai *dai)
 	ssp_write(dai, SSCR0, sscr0);
 
 	dai_info(dai, "ssp_bclk_prepare_enable(): sscr0 = 0x%08x", sscr0);
+
+	/* enable TRSE/RSRE before SSE */
+	ssp_update_bits(dai, SSCR1, SSCR1_TSRE | SSCR1_RSRE,
+			SSCR1_TSRE | SSCR1_RSRE);
+
+	/* enable port */
+	ssp_update_bits(dai, SSCR0, SSCR0_SSE, SSCR0_SSE);
+
+	dai_info(dai, "ssp_bclk_prepare_enable(): enable bclk/port for SSP%d",
+		 dai->index);
+
 out:
 	if (!ret)
-		ssp->clk_active |= SSP_CLK_BCLK_ACTIVE;
+		ssp->bclk_ref++;
 
 	return ret;
 }
 
-static void ssp_bclk_disable_unprepare(struct dai *dai)
+static void ssp_bclk_disable_unprepare(struct dai *dai, uint32_t requester)
 {
 	struct ssp_pdata *ssp = dai_get_drvdata(dai);
 
-	if (!(ssp->clk_active & SSP_CLK_BCLK_ACTIVE))
+	if (!(ssp->clk_request & requester)) {
+		dai_info(dai, "ssp_bclk_disable_unprepare(): unbalanced call for SSP%d, requester 0x%x, clk_request 0x%x",
+			 dai->index, requester, ssp->clk_request);
 		return;
+	}
+
+	ssp->clk_request &= ~requester;
+
+	if (!ssp->bclk_ref) {
+		dai_err(dai, "ssp_bclk_disable_unprepare(): unbalanced ref count");
+		return;
+	}
+
+	ssp->bclk_ref--;
+
+	if (ssp->bclk_ref) /* still needs it */
+		return;
+
+	dai_info(dai, "ssp_bclk_disable_unprepare(): disable port/bclk for SSP%d",
+		 dai->index);
+
+	/* clear TRSE/RSRE before SSE */
+	ssp_update_bits(dai, SSCR1, SSCR1_TSRE | SSCR1_RSRE, 0);
+
+	ssp_update_bits(dai, SSCR0, SSCR0_SSE, 0);
+
 #if CONFIG_INTEL_MN
 	mn_release_bclk(dai->index);
 #endif
-	ssp->clk_active &= ~SSP_CLK_BCLK_ACTIVE;
 }
 
 /* Digital Audio interface formatting */
@@ -253,7 +325,7 @@ static int ssp_set_config_tplg(struct dai *dai, struct ipc_config_dai *common_co
 			goto clk;
 		}
 
-		if (ssp->clk_active & (SSP_CLK_MCLK_ACTIVE | SSP_CLK_BCLK_ACTIVE)) {
+		if (ssp->mclk_ref || ssp->bclk_ref) {
 			dai_warn(dai, "ssp_set_config(): SSP active, cannot change config");
 			goto clk;
 		}
@@ -701,86 +773,61 @@ static int ssp_set_config_tplg(struct dai *dai, struct ipc_config_dai *common_co
 clk:
 	/* MCLK always-on: turn on mclk and never turn it off */
 	if (ssp->params.clks_control & SOF_DAI_INTEL_SSP_CLKCTRL_MCLK_AON) {
-		ret = ssp_mclk_prepare_enable(dai);
+		dai_info(dai, "ssp_set_config(): aon: try enable mclk for SSP%d",
+			 dai->index);
+
+		ret = ssp_mclk_prepare_enable(dai, SSP_CLK_MCLK_AON_REQ);
 		if (ret < 0)
 			goto out;
-
-		ssp->clk_active |= SSP_CLK_MCLK_AON_REQ;
-
-		dai_info(dai, "ssp_set_config(): enable MCLK for SSP%d", dai->index);
 	}
 
 	switch (config->flags & SOF_DAI_CONFIG_FLAGS_CMD_MASK) {
 	case SOF_DAI_CONFIG_FLAGS_HW_PARAMS:
+		if (ssp->state[SOF_IPC_STREAM_CAPTURE] == COMP_STATE_ACTIVE ||
+		    ssp->state[SOF_IPC_STREAM_PLAYBACK] == COMP_STATE_ACTIVE) {
+			dai_info(dai, "ssp_set_config(): hw_params: ignore since SSP%d still in use",
+				 dai->index);
+			break;
+		}
+
 		if (ssp->params.clks_control & SOF_DAI_INTEL_SSP_CLKCTRL_MCLK_ES) {
-			ret = ssp_mclk_prepare_enable(dai);
+			dai_info(dai, "ssp_set_config(): hw_params: try enable mclk for SSP%d",
+				 dai->index);
+
+			ret = ssp_mclk_prepare_enable(dai, SSP_CLK_MCLK_ES_REQ);
 			if (ret < 0)
 				goto out;
-
-			ssp->clk_active |= SSP_CLK_MCLK_ES_REQ;
-
-			dai_info(dai, "ssp_set_config(): hw_params stage: enabled MCLK clocks for SSP%d...",
-				 dai->index);
 		}
 
 		if (ssp->params.clks_control & SOF_DAI_INTEL_SSP_CLKCTRL_BCLK_ES) {
-			bool enable_sse = false;
+			dai_info(dai, "ssp_set_config(): hw_params: try enable bclk for SSP%d",
+				 dai->index);
 
-			if (!(ssp->clk_active & SSP_CLK_BCLK_ACTIVE))
-				enable_sse = true;
-
-			ret = ssp_bclk_prepare_enable(dai);
+			ret = ssp_bclk_prepare_enable(dai, SSP_CLK_BCLK_ES_REQ);
 			if (ret < 0)
 				goto out;
-
-			ssp->clk_active |= SSP_CLK_BCLK_ES_REQ;
-
-			if (enable_sse) {
-
-				/* enable TRSE/RSRE before SSE */
-				ssp_update_bits(dai, SSCR1,
-						SSCR1_TSRE | SSCR1_RSRE,
-						SSCR1_TSRE | SSCR1_RSRE);
-
-				/* enable port */
-				ssp_update_bits(dai, SSCR0, SSCR0_SSE, SSCR0_SSE);
-
-				dai_info(dai, "ssp_set_config(): SSE set for SSP%d", dai->index);
-			}
-
-			dai_info(dai, "ssp_set_config(): hw_params stage: enabled BCLK clocks for SSP%d...",
-				 dai->index);
 		}
 		break;
 	case SOF_DAI_CONFIG_FLAGS_HW_FREE:
 		/* disable SSP port if no users */
 		if (ssp->state[SOF_IPC_STREAM_CAPTURE] != COMP_STATE_PREPARE ||
 		    ssp->state[SOF_IPC_STREAM_PLAYBACK] != COMP_STATE_PREPARE) {
-			dai_info(dai, "ssp_set_config(): hw_free stage: ignore since SSP%d still in use",
+			dai_info(dai, "ssp_set_config(): hw_free: ignore since SSP%d still in use",
 				 dai->index);
 			break;
 		}
 
 		if (ssp->params.clks_control & SOF_DAI_INTEL_SSP_CLKCTRL_BCLK_ES) {
-			dai_info(dai, "ssp_set_config(): hw_free stage: releasing BCLK clocks for SSP%d...",
+			dai_info(dai, "ssp_set_config(): hw_free: try disable bclk for SSP%d",
 				 dai->index);
-			if (ssp->clk_active & SSP_CLK_BCLK_ACTIVE) {
-				/* clear TRSE/RSRE before SSE */
-				ssp_update_bits(dai, SSCR1,
-						SSCR1_TSRE | SSCR1_RSRE,
-						0);
 
-				ssp_update_bits(dai, SSCR0, SSCR0_SSE, 0);
-				dai_info(dai, "ssp_set_config(): SSE clear for SSP%d", dai->index);
-			}
-			ssp_bclk_disable_unprepare(dai);
-			ssp->clk_active &= ~SSP_CLK_BCLK_ES_REQ;
+			ssp_bclk_disable_unprepare(dai, SSP_CLK_BCLK_ES_REQ);
 		}
 		if (ssp->params.clks_control & SOF_DAI_INTEL_SSP_CLKCTRL_MCLK_ES) {
-			dai_info(dai, "ssp_set_config: hw_free stage: releasing MCLK clocks for SSP%d...",
+			dai_info(dai, "ssp_set_config(): hw_free: try disable mclk for SSP%d",
 				 dai->index);
-			ssp_mclk_disable_unprepare(dai);
-			ssp->clk_active &= ~SSP_CLK_MCLK_ES_REQ;
+
+			ssp_mclk_disable_unprepare(dai, SSP_CLK_MCLK_ES_REQ);
 		}
 		break;
 	default:
@@ -847,14 +894,14 @@ static int ssp_set_config_blob(struct dai *dai, struct ipc_config_dai *common_co
 	 */
 	mn_set_mclk_blob(blob->i2s_driver_config.mclk_config.mdivc,
 			 blob->i2s_driver_config.mclk_config.mdivr);
-	ssp->clk_active |= SSP_CLK_MCLK_ES_REQ;
+	ssp->clk_request |= SSP_CLK_MCLK_ES_REQ;
 
 	/* enable TRSE/RSRE before SSE */
 	ssp_update_bits(dai, SSCR1, SSCR1_TSRE | SSCR1_RSRE, SSCR1_TSRE | SSCR1_RSRE);
 
 	/* enable port */
 	ssp_update_bits(dai, SSCR0, SSCR0_SSE, SSCR0_SSE);
-	ssp->clk_active |= SSP_CLK_BCLK_ES_REQ;
+	ssp->clk_request |= SSP_CLK_BCLK_ES_REQ;
 
 	return 0;
 }
@@ -873,27 +920,37 @@ static int ssp_set_config(struct dai *dai, struct ipc_config_dai *common_config,
  * SSP dai is activated, for either power saving or params runtime
  * configurable flexibility.
  */
-static int ssp_pre_start(struct dai *dai)
+static int ssp_pre_start(struct dai *dai, int direction)
 {
-	struct ssp_pdata *ssp = dai_get_drvdata(dai);
+	k_spinlock_key_t key;
 	int ret = 0;
 
-	dai_info(dai, "ssp_pre_start()");
+	key = k_spin_lock(&dai->lock);
+
+	dai_info(dai, "ssp_pre_start(): dir %d", direction);
 
 	/*
 	 * We will test if mclk/bclk is configured in
 	 * ssp_mclk/bclk_prepare_enable/disable functions
 	 */
-	if (!(ssp->clk_active & SSP_CLK_MCLK_ES_REQ) &&
-	    !(ssp->clk_active & SSP_CLK_MCLK_AON_REQ)) {
+	if (direction == SOF_IPC_STREAM_CAPTURE) {
 		/* MCLK config */
-		ret = ssp_mclk_prepare_enable(dai);
+		ret = ssp_mclk_prepare_enable(dai, SSP_CLK_MCLK_CAPTURE_REQ);
 		if (ret < 0)
-			return ret;
+			goto out;
+
+		ret = ssp_bclk_prepare_enable(dai, SSP_CLK_BCLK_CAPTURE_REQ);
+	} else {
+		/* MCLK config */
+		ret = ssp_mclk_prepare_enable(dai, SSP_CLK_MCLK_PLAYBACK_REQ);
+		if (ret < 0)
+			goto out;
+
+		ret = ssp_bclk_prepare_enable(dai, SSP_CLK_BCLK_PLAYBACK_REQ);
 	}
 
-	if (!(ssp->clk_active & SSP_CLK_BCLK_ES_REQ))
-		ret = ssp_bclk_prepare_enable(dai);
+out:
+	k_spin_unlock(&dai->lock, key);
 
 	return ret;
 }
@@ -903,24 +960,16 @@ static int ssp_pre_start(struct dai *dai)
  * dai is changed to inactive, though the runtime param configuration
  * don't have to be reset.
  */
-static void ssp_post_stop(struct dai *dai)
+static void ssp_post_stop(struct dai *dai, int direction)
 {
-	struct ssp_pdata *ssp = dai_get_drvdata(dai);
+	dai_info(dai, "ssp_post_stop(): dir %d", direction);
 
-	/* release clocks if SSP is inactive */
-	if (ssp->state[SOF_IPC_STREAM_PLAYBACK] != COMP_STATE_ACTIVE &&
-	    ssp->state[SOF_IPC_STREAM_CAPTURE] != COMP_STATE_ACTIVE) {
-		if (!(ssp->clk_active & SSP_CLK_BCLK_ES_REQ)) {
-			dai_info(dai, "ssp_post_stop releasing BCLK clocks for SSP%d...",
-				 dai->index);
-			ssp_bclk_disable_unprepare(dai);
-		}
-		if (!(ssp->clk_active & SSP_CLK_MCLK_ES_REQ) &&
-		    !(ssp->clk_active & SSP_CLK_MCLK_AON_REQ)) {
-			dai_info(dai, "ssp_post_stop releasing MCLK clocks for SSP%d...",
-				 dai->index);
-			ssp_mclk_disable_unprepare(dai);
-		}
+	if (direction == SOF_IPC_STREAM_CAPTURE) {
+		ssp_bclk_disable_unprepare(dai, SSP_CLK_BCLK_CAPTURE_REQ);
+		ssp_mclk_disable_unprepare(dai, SSP_CLK_MCLK_CAPTURE_REQ);
+	} else {
+		ssp_bclk_disable_unprepare(dai, SSP_CLK_BCLK_PLAYBACK_REQ);
+		ssp_mclk_disable_unprepare(dai, SSP_CLK_MCLK_PLAYBACK_REQ);
 	}
 }
 
@@ -954,31 +1003,6 @@ static int ssp_get_hw_params(struct dai *dai,
 	}
 
 	return 0;
-}
-
-static void ssp_early_start(struct dai *dai, int direction)
-{
-	struct ssp_pdata *ssp = dai_get_drvdata(dai);
-	k_spinlock_key_t key;
-
-	key = k_spin_lock(&dai->lock);
-
-	/* request mclk/bclk */
-	ssp_pre_start(dai);
-
-	if (!(ssp->clk_active & SSP_CLK_BCLK_ES_REQ)) {
-		/* enable TRSE/RSRE before SSE */
-		ssp_update_bits(dai, SSCR1,
-				SSCR1_TSRE | SSCR1_RSRE,
-				SSCR1_TSRE | SSCR1_RSRE);
-
-		/* enable port */
-		ssp_update_bits(dai, SSCR0, SSCR0_SSE, SSCR0_SSE);
-		dai_info(dai, "ssp_early_start(): SSE set for SSP%d", dai->index);
-	}
-
-
-	k_spin_unlock(&dai->lock, key);
 }
 
 /* start the SSP for either playback or capture */
@@ -1056,21 +1080,7 @@ static void ssp_stop(struct dai *dai, int direction)
 		dai_info(dai, "ssp_stop(), TX stop");
 	}
 
-	/* disable SSP port if no users */
-	if (ssp->state[SOF_IPC_STREAM_CAPTURE] == COMP_STATE_PREPARE &&
-	    ssp->state[SOF_IPC_STREAM_PLAYBACK] == COMP_STATE_PREPARE) {
-		if (!(ssp->clk_active & SSP_CLK_BCLK_ES_REQ)) {
-			/* clear TRSE/RSRE before SSE */
-			ssp_update_bits(dai, SSCR1,
-					SSCR1_TSRE | SSCR1_RSRE,
-					0);
-
-			ssp_update_bits(dai, SSCR0, SSCR0_SSE, 0);
-			dai_info(dai, "ssp_stop(): SSE clear SSP%d", dai->index);
-		}
-	}
-
-	ssp_post_stop(dai);
+	ssp_post_stop(dai, direction);
 
 	k_spin_unlock(&dai->lock, key);
 }
@@ -1108,7 +1118,7 @@ static int ssp_trigger(struct dai *dai, int cmd, int direction)
 		break;
 	case COMP_TRIGGER_PRE_START:
 	case COMP_TRIGGER_PRE_RELEASE:
-		ssp_early_start(dai, direction);
+		ssp_pre_start(dai, direction);
 		break;
 	}
 
@@ -1151,10 +1161,14 @@ static int ssp_probe(struct dai *dai)
 
 static int ssp_remove(struct dai *dai)
 {
+	struct ssp_pdata *ssp = dai_get_drvdata(dai);
+
 	pm_runtime_put_sync(SSP_CLK, dai->index);
 
-	ssp_mclk_disable_unprepare(dai);
-	ssp_bclk_disable_unprepare(dai);
+	mn_release_mclk(ssp->config.ssp.mclk_id);
+#if CONFIG_INTEL_MN
+	mn_release_bclk(dai->index);
+#endif
 
 	/* Disable SSP power */
 	pm_runtime_put_sync(SSP_POW, dai->index);
@@ -1179,7 +1193,7 @@ static uint32_t ssp_get_init_delay_ms(struct dai *dai)
 {
 	struct ssp_pdata *ssp = dai_get_drvdata(dai);
 
-	if (ssp->clk_active & SSP_CLK_BCLK_ACTIVE)
+	if (ssp->bclk_ref)
 		return 0;
 
 	/* drive BCLK early for guaranteed time,

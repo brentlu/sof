@@ -208,11 +208,16 @@ extern const struct dai_driver ssp_driver;
 #define ssp_irq(ssp) \
 	ssp->plat_data.irq
 
-#define SSP_CLK_MCLK_ES_REQ	BIT(0)
-#define SSP_CLK_MCLK_ACTIVE	BIT(1)
-#define SSP_CLK_BCLK_ES_REQ	BIT(2)
-#define SSP_CLK_BCLK_ACTIVE	BIT(3)
-#define SSP_CLK_MCLK_AON_REQ	BIT(4)
+/* MCLK/BCLK early start: HW_PARAM-> HW_FREE */
+#define SSP_CLK_MCLK_ES_REQ		BIT(0)
+#define SSP_CLK_BCLK_ES_REQ		BIT(1)
+/* MCLK always on */
+#define SSP_CLK_MCLK_AON_REQ		BIT(2)
+/* MCLK/BCLK streaming: START->STOP */
+#define SSP_CLK_MCLK_PLAYBACK_REQ	BIT(3)
+#define SSP_CLK_MCLK_CAPTURE_REQ	BIT(4)
+#define SSP_CLK_BCLK_PLAYBACK_REQ	BIT(5)
+#define SSP_CLK_BCLK_CAPTURE_REQ	BIT(6)
 
 /* SSP private data */
 struct ssp_pdata {
@@ -220,7 +225,9 @@ struct ssp_pdata {
 	uint32_t sscr1;
 	uint32_t psp;
 	uint32_t state[2];		/* SSP_STATE_ for each direction */
-	uint32_t clk_active;
+	uint32_t clk_request;
+	uint32_t mclk_ref;
+	uint32_t bclk_ref;
 	struct sof_ipc_dai_config config;
 	struct sof_ipc_dai_ssp_params params;
 };
