@@ -92,6 +92,7 @@ struct dai_ops {
 	uint32_t (*get_init_delay_ms)(struct dai *dai);
 	int (*get_fifo_depth)(struct dai *dai, int direction);
 	void (*copy)(struct dai *dai);  /* Can be used by DAIs to prepare for data copying */
+	int (*pm_clk_req)(struct dai *dai, uint32_t clk_id, uint32_t enable);
 };
 
 struct timestamp_cfg {
@@ -490,6 +491,14 @@ static inline int dai_get_fifo_depth(struct dai *dai, int direction)
 {
 	if (dai && dai->drv->ops.get_fifo_depth)
 		return dai->drv->ops.get_fifo_depth(dai, direction);
+
+	return 0;
+}
+
+static inline int dai_pm_clk_req(struct dai *dai, uint32_t clk_id, uint32_t enable)
+{
+	if (dai && dai->drv->ops.pm_clk_req)
+		return dai->drv->ops.pm_clk_req(dai, clk_id, enable);
 
 	return 0;
 }

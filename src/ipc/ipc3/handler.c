@@ -801,6 +801,44 @@ static int ipc_pm_gate(uint32_t header)
 	return 0;
 }
 
+static int ipc_pm_clk_req(uint32_t header)
+{
+	struct sof_ipc_pm_clk_req pm_clk_req;
+	struct dai *dai;
+	int ret;
+
+	IPC_COPY_CMD(pm_clk_req, ipc_get()->comp_data);
+
+	tr_info(&ipc_tr, "ipc: pm clk req type 0x%x id 0x%x en 0x%x",
+		pm_clk_req.type, pm_clk_req.id, pm_clk_req.en);
+
+	switch (pm_clk_req.type) {
+	case SOF_PM_CLK_DAI:
+		/* get DAI */
+		dai = dai_get(pm_clk_req.dai.type, pm_clk_req.dai.dai_index, 0 /* existing only */);
+		if (!dai) {
+			tr_err(&ipc_tr, "ipc: dai %d,%d not found",
+			       pm_clk_req.dai.type, pm_clk_req.dai.dai_index);
+			return -ENODEV;
+		}
+
+		/* configure DAI */
+		ret = dai_pm_clk_req(dai, pm_clk_req.id, pm_clk_req.en);
+		dai_put(dai); /* free ref immediately */
+		if (ret < 0) {
+			tr_err(&ipc_tr, "ipc: dai %d,%d clk req failed %d",
+			       pm_clk_req.dai.type, pm_clk_req.dai.dai_index,
+			       ret);
+			return ret;
+		}
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 static int ipc_glb_pm_message(uint32_t header)
 {
 	uint32_t cmd = iCS(header);
@@ -818,7 +856,9 @@ static int ipc_glb_pm_message(uint32_t header)
 		return ipc_pm_gate(header);
 	case SOF_IPC_PM_CLK_SET:
 	case SOF_IPC_PM_CLK_GET:
+		return -EINVAL;
 	case SOF_IPC_PM_CLK_REQ:
+		return ipc_pm_clk_req(header);
 	default:
 		ipc_cmd_err(&ipc_tr, "ipc: unknown pm cmd 0x%x", cmd);
 		return -EINVAL;

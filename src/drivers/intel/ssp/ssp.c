@@ -1202,6 +1202,31 @@ static uint32_t ssp_get_init_delay_ms(struct dai *dai)
 	return ssp->params.bclk_delay;
 }
 
+static int ssp_pm_clk_req(struct dai *dai, uint32_t clk_id, uint32_t enable)
+{
+	int ret = 0;
+
+	switch (clk_id) {
+	case SOF_DAI_INTEL_CLK_MCLK:
+		if (enable)
+			ret = ssp_mclk_prepare_enable(dai, SSP_CLK_MCLK_HOST_REQ);
+		else
+			ssp_mclk_disable_unprepare(dai, SSP_CLK_MCLK_HOST_REQ);
+		break;
+	case SOF_DAI_INTEL_CLK_BCLK:
+		if (enable)
+			ret = ssp_bclk_prepare_enable(dai, SSP_CLK_BCLK_HOST_REQ);
+		else
+			ssp_bclk_disable_unprepare(dai, SSP_CLK_BCLK_HOST_REQ);
+		break;
+	default:
+		ret = -EINVAL;
+		break;
+	}
+
+	return ret;
+}
+
 const struct dai_driver ssp_driver = {
 	.type = SOF_DAI_INTEL_SSP,
 	.uid = SOF_UUID(ssp_uuid),
@@ -1215,6 +1240,7 @@ const struct dai_driver ssp_driver = {
 		.get_handshake		= ssp_get_handshake,
 		.get_fifo		= ssp_get_fifo,
 		.get_init_delay_ms	= ssp_get_init_delay_ms,
+		.pm_clk_req		= ssp_pm_clk_req,
 		.probe			= ssp_probe,
 		.remove			= ssp_remove,
 	},

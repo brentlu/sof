@@ -218,6 +218,9 @@ extern const struct dai_driver ssp_driver;
 #define SSP_CLK_MCLK_CAPTURE_REQ	BIT(4)
 #define SSP_CLK_BCLK_PLAYBACK_REQ	BIT(5)
 #define SSP_CLK_BCLK_CAPTURE_REQ	BIT(6)
+/* MCLK/BCLK host: PREPARE->RELEASE */
+#define SSP_CLK_MCLK_HOST_REQ		BIT(7)
+#define SSP_CLK_BCLK_HOST_REQ		BIT(8)
 
 /* SSP private data */
 struct ssp_pdata {
