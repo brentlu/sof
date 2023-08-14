@@ -465,16 +465,30 @@ ifelse(
 		SSP_CLOCK(fsync, 48000, codec_slave),
 		SSP_TDM(4, 32, 3, 15),
 		SSP_CONFIG_DATA(SSP, SPK_SSP_INDEX, 24)))',
+	CODEC, `RT5650', `
+	SSP_CONFIG(I2S, SSP_CLOCK(mclk, 24576000, codec_mclk_in),
+		SSP_CLOCK(bclk, 3072000, codec_slave),
+		SSP_CLOCK(fsync, 48000, codec_slave),
+		SSP_TDM(2, 32, 3, 3),
+		SSP_CONFIG_DATA(SSP, SPK_SSP_INDEX, 24, 0, 0, 0, SSP_CC_MCLK_AON)))',
 	)')
 
 ifdef(`NO_HEADPHONE',`',`
 # SSP 0 (ID: BOARD_HP_BE_ID)
 DAI_CONFIG(SSP, 0, BOARD_HP_BE_ID, SSP0-Codec,
+ifelse(
+	CODEC, `RT5650', `
+	SSP_CONFIG(I2S, SSP_CLOCK(mclk, 24576000, codec_mclk_in),
+		SSP_CLOCK(bclk, 3072000, codec_slave),
+		SSP_CLOCK(fsync, 48000, codec_slave),
+		SSP_TDM(2, 32, 3, 3),
+		SSP_CONFIG_DATA(SSP, 0, 24, 0, 0, 0, SSP_CC_MCLK_AON)))',
+	`
 	SSP_CONFIG(I2S, SSP_CLOCK(mclk, 19200000, codec_mclk_in),
 		SSP_CLOCK(bclk, 2400000, codec_slave),
 		SSP_CLOCK(fsync, 48000, codec_slave),
 		SSP_TDM(2, 25, 3, 3),
-		SSP_CONFIG_DATA(SSP, 0, 24, 0, 0, 0, SSP_CC_BCLK_ES)))')
+		SSP_CONFIG_DATA(SSP, 0, 24, 0, 0, 0, SSP_CC_BCLK_ES)))')')
 
 # 4 HDMI/DP outputs (ID: 3,4,5,6)
 DAI_CONFIG(HDA, 0, BOARD_HDMI_BE_ID_BASE, iDisp1,
