@@ -6,6 +6,7 @@
 
 #include <sof/common.h>
 #include <sof/drivers/ssp.h>
+#include <sof/drivers/mn.h>
 #include <sof/lib/clk.h>
 #include <sof/lib/memory.h>
 #include <sof/lib/notifier.h>
@@ -353,4 +354,8 @@ void platform_clock_init(struct sof *sof)
 	};
 
 	k_spinlock_init(&sof->clocks[CLK_SSP].lock);
+
+	sof->clocks[CLK_MCLK] = (struct clock_info) {
+		.set_freq = mn_clock_set_mclk_freq,
+	};
 }

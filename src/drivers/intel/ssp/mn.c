@@ -311,6 +311,18 @@ void mn_release_mclk(uint32_t mclk_id)
 	k_spin_unlock(&mn->lock, key);
 }
 
+int mn_clock_set_mclk_freq(int mclk_id, int mclk_rate)
+{
+	int ret = 0;
+
+	if (!mclk_rate)
+		mn_release_mclk(mclk_id);
+	else
+		ret = mn_set_mclk(mclk_id, mclk_rate);
+
+	return ret;
+}
+
 #if CONFIG_INTEL_MN
 /**
  * \brief Finds valid M/(N * SCR) values for given frequencies.
@@ -664,5 +676,4 @@ void mn_reset_bclk_divider(uint32_t dai_index)
 	mn_reg_write(MN_MDIV_N_VAL(dai_index), dai_index, 1);
 	k_spin_unlock(&mn->lock, key);
 }
-
 #endif

@@ -32,10 +32,13 @@ struct sof;
 /** \brief SSP clock r-t settings are after the core(s) settings */
 #define CLK_SSP		CONFIG_CORE_COUNT
 
-/* SSP clock run-time data is the last one, so total number is ssp idx +1 */
+/** \brief MCLK clock r-t settings are after the SSP settings */
+#define CLK_MCLK	(CLK_SSP + 1)
+
+/* MCLK clock run-time data is the last one, so total number is core count + 2 */
 
 /** \brief Total number of clocks */
-#define NUM_CLOCKS	(CLK_SSP + 1)
+#define NUM_CLOCKS	(CLK_MCLK + 1)
 
 extern const struct freq_table *cpu_freq;
 extern const uint32_t cpu_freq_enc[];

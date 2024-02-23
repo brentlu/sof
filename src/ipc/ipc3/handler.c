@@ -769,6 +769,45 @@ static int ipc_pm_gate(uint32_t header)
 	return 0;
 }
 
+static int ipc_pm_clk_req(uint32_t header)
+{
+	struct sof_ipc_pm_clk_req pm_clk_req;
+	struct clock_info *clk_info;
+	uint32_t freq;
+	int ret;
+
+	IPC_COPY_CMD(pm_clk_req, ipc_get()->comp_data);
+
+	tr_info(&ipc_tr, "ipc: pm clk req type 0x%x id 0x%x en 0x%x",
+		pm_clk_req.type, pm_clk_req.id, pm_clk_req.en);
+
+	switch (pm_clk_req.type) {
+	case SOF_PM_CLK_MCLK:
+#if CONFIG_CAVS
+		clk_info = clocks_get() + CLK_MCLK;
+#else
+		return -ENODEV;
+#endif
+
+		if (!clk_info->set_freq)
+			return -ENODEV;
+
+		if (pm_clk_req.en)
+			freq = pm_clk_req.mclk.freq;
+		else
+			freq = 0;
+
+		ret = clk_info->set_freq(pm_clk_req.id, freq);
+		if (ret)
+			tr_err(&ipc_tr, "Failed to set mclk freq %d", freq);
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	return ret;
+}
+
 static int ipc_glb_pm_message(uint32_t header)
 {
 	uint32_t cmd = iCS(header);
@@ -786,7 +825,9 @@ static int ipc_glb_pm_message(uint32_t header)
 		return ipc_pm_gate(header);
 	case SOF_IPC_PM_CLK_SET:
 	case SOF_IPC_PM_CLK_GET:
+		return -EINVAL;
 	case SOF_IPC_PM_CLK_REQ:
+		return ipc_pm_clk_req(header);
 	default:
 		tr_err(&ipc_tr, "ipc: unknown pm cmd 0x%x", cmd);
 		return -EINVAL;

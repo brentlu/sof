@@ -45,6 +45,13 @@ int mn_set_mclk_blob(uint32_t mdivc, uint32_t mdivr);
  */
 void mn_release_mclk(uint32_t mclk_id);
 
+/**
+ * \brief wrapper function for clock_info structure
+ * \param[in] mclk_id id of main clock for which rate should be set.
+ * \param[in] mclk_rate main clock frequency.
+ */
+int mn_clock_set_mclk_freq(int mclk_id, int mclk_rate);
+
 #if CONFIG_INTEL_MN
 /**
  * \brief Finds and sets valid combination of BCLK source and M/N to
