@@ -37,6 +37,15 @@ include(`platform/intel/intel-generic-dmic.m4')
 '
 )
 
+ifdef(`BT_OFFLOAD', `
+# BT offload support
+define(`BT_PIPELINE_PB_ID', `7')
+define(`BT_PIPELINE_CP_ID', `8')
+define(`BT_DAI_LINK_ID', 8)
+define(`BT_PCM_ID', `8')
+define(`HW_CONFIG_ID', 8)
+include(`platform/intel/intel-generic-bt.m4')')
+
 #
 # Define the pipelines
 #
